@@ -1,5 +1,11 @@
 # kgh
 /* 이 코드는 적외선센서로 좌표평면상에 나타내는 코드이다.*/
+/* 새로운 코드 아래에 추가, 해당 코드는 초음파를 1차원 */
+/* 운동시키고 그에따른 거리값을 읽어와 휴대폰의 코일을  */
+/* 특정하는 코드이다.                           */
+/* detectphone 함수는 휴대폰의 존재 유무를 판단하여 */
+/* 값을 리턴한다. scanphone은 휴대폰의 코일의 위치를 */
+/* 특정한다.                                 */
 /* created by KGH                          */
 #include <Servo.h>
 Servo sservo;
@@ -36,4 +42,143 @@ void loop(){
       yphone=((save[0][1]+save[1][1])/2);
     }
   }
+}
+
+/****************************************************************************************/
+
+int detectphone(){
+  int cnt=0;
+  encoder=0;
+  y.run(FORWARD);
+  for(int i=0;i<230;i++){
+    y.setSpeed(i);
+  }
+  
+  temp2=digitalRead(YINTER);
+//  s=temp2;
+  while(encoder!=100){
+    Serial.println(encoder);
+    
+    temp1=digitalRead(YINTER);
+    if(temp1!=temp2){
+//    if(temp2==s&&temp1!=temp2){
+      digitalWrite(TRIG, LOW);
+      delayMicroseconds(2);
+      digitalWrite(TRIG, HIGH);
+      delayMicroseconds(10);
+      digitalWrite(TRIG, LOW);
+      distance = pulseIn(ECHO, HIGH) * 17 / 1000;
+      if(distance<=35){
+        cnt++;
+      }
+      
+      encoder++;  
+      temp1=digitalRead(YINTER);    
+    }
+    temp2=temp1;
+  }
+  y.run(RELEASE);
+  delay(1000);
+  y.run(BACKWARD);
+  for(int i=0;i<230;i++){
+    y.setSpeed(i);
+  }
+  encoder=0;
+  while(encoder!=100){
+    Serial.println(encoder);
+    
+    temp1=digitalRead(YINTER);
+    if(temp1!=temp2){
+//    if(temp2==s&&temp1!=temp2){
+      
+      digitalWrite(TRIG, LOW);
+      delayMicroseconds(2);
+      digitalWrite(TRIG, HIGH);
+      delayMicroseconds(10);
+      digitalWrite(TRIG, LOW);
+      distance = pulseIn(ECHO, HIGH) * 17 / 1000;
+      if(distance<=30){
+        cnt++;
+      }
+      encoder++;
+      temp1=digitalRead(YINTER);
+//      Serial.println(encoder);
+    }
+    temp2=temp1;
+  }
+  y.run(RELEASE);
+  delay(1000);
+  return cnt;
+}
+void scanphone(){
+  int cnt=0;
+  encoder=0;
+  y.run(FORWARD);
+  for(int i=0;i<230;i++){
+    y.setSpeed(i);
+  }
+  temp2=digitalRead(YINTER);
+  while(encoder!=100){
+    Serial.println(encoder);
+    
+    temp1=digitalRead(YINTER);
+    if(temp1!=temp2){
+      digitalWrite(TRIG, LOW);
+      delayMicroseconds(2);
+      digitalWrite(TRIG, HIGH);
+      delayMicroseconds(10);
+      digitalWrite(TRIG, LOW);
+      distance = pulseIn(ECHO, HIGH) * 17 / 1000;
+      if(distance<=35&&cnt==0&&distance>=3){
+        save[0][0]=distance;
+        save[0][1]=encoder;
+        cnt=1;
+        Serial.print(save[0][0]);
+  Serial.print("\t");
+  Serial.println(save[0][1]);
+      }
+      encoder++;  
+      temp1=digitalRead(YINTER);    
+    }
+    temp2=temp1;
+  }
+  y.run(RELEASE);
+  delay(1000);
+  y.run(BACKWARD);
+  for(int i=0;i<230;i++){
+    y.setSpeed(i);
+  }
+  encoder=0;
+  while(encoder!=100){
+    Serial.println(encoder);
+    
+    temp1=digitalRead(YINTER);
+    if(temp1!=temp2){
+      digitalWrite(TRIG, LOW);
+      delayMicroseconds(2);
+      digitalWrite(TRIG, HIGH);
+      delayMicroseconds(10);
+      digitalWrite(TRIG, LOW);
+      distance = pulseIn(ECHO, HIGH) * 17 / 1000;
+      if(distance<=35&&cnt==1&&distance>=3){
+        save[1][0]=distance;
+        save[1][1]=encoder;
+        Serial.print(save[1][0]);
+  Serial.print("\t");
+  Serial.println(save[1][1]);
+        cnt=2;
+      } 
+      encoder++;
+      temp1=digitalRead(YINTER);
+    }
+    temp2=temp1;
+  }
+  y.run(RELEASE);
+  delay(1000);
+  
+  save[2][0]=(save[1][0]+save[0][0])*8/7+8;
+  save[2][1]=(100-save[1][1]+save[0][1])/2;
+  Serial.print(save[2][0]);
+  Serial.print("\t");
+  Serial.println(save[2][1]);
 }
